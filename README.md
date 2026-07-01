@@ -3,9 +3,28 @@
 [![CI](https://github.com/PlatformStackPulse/tf-atom-internet-gateway-aws/actions/workflows/ci.yml/badge.svg)](https://github.com/PlatformStackPulse/tf-atom-internet-gateway-aws/actions/workflows/ci.yml)
 ![Terraform](https://img.shields.io/badge/terraform-%3E%3D1.6.0-blueviolet)
 
-## Purpose
+Terraform atom module that provisions an AWS Internet Gateway and attaches it to a VPC, providing outbound/inbound internet connectivity for public subnets.
 
-Terraform atom: AWS Internet Gateway - provides internet access for a VPC.
+## Features
+
+- Creates an `aws_internet_gateway` and attaches it to the supplied `vpc_id`.
+- Consistent naming and tagging via the [tf-label](https://github.com/PlatformStackPulse/tf-label) context module (`namespace`/`stage`/`name`/...), with the label `id` applied as the `Name` tag.
+- Toggle creation on/off with the `enabled` input — when `false` the module creates no resources and `id`/`arn` outputs are `null`.
+- Exposes the gateway `id` and `arn` for wiring into route tables and other network resources.
+
+## Usage
+
+```hcl
+module "internet_gateway" {
+  source = "git::https://github.com/PlatformStackPulse/tf-atom-internet-gateway-aws.git?ref=v1.0.0"
+
+  namespace = "eg"
+  stage     = "prod"
+  name      = "public"
+
+  vpc_id = module.vpc.id
+}
+```
 
 ## Module Documentation
 
@@ -66,3 +85,22 @@ Terraform atom: AWS Internet Gateway - provides internet access for a VPC.
 | <a name="output_enabled"></a> [enabled](#output\_enabled) | Whether the module is enabled |
 | <a name="output_id"></a> [id](#output\_id) | ID of the internet gateway |
 <!-- END_TF_DOCS -->
+
+## Tests
+
+Unit tests use the Terraform test framework with a mock AWS provider (no real cloud calls) and assert on plan-known values only — the tf-label `id`/`Name` tag, resource count, and input pass-throughs.
+
+```bash
+# Unit tests (mocked provider, no AWS credentials required)
+terraform init -backend=false
+terraform test -test-directory=tests/unit
+
+# Or via the Makefile
+make test-unit
+```
+
+Integration tests, when present, live under `tests/integration` and require real AWS credentials:
+
+```bash
+terraform test -test-directory=tests/integration
+```
